@@ -21,7 +21,6 @@ class Visita {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
         'cliente_id': clienteID,
         'data': data,
         'descricao': descricao,

@@ -1,23 +1,24 @@
 import 'package:brasil_fields/brasil_fields.dart';
-import 'package:easy_crm/data/datasources/visita_db_datasource.dart';
-import 'package:easy_crm/repository/visita_repository.dart';
+import 'package:easy_crm/models/visita_model.dart';
+import 'package:easy_crm/providers/visitas_provider.dart';
 import 'package:easy_crm/util/validations_mixin.dart';
 import 'package:easy_crm/widgets/custom_text_form_field.dart';
 import 'package:easy_crm/widgets/error_dialog.dart';
 import 'package:easy_crm/widgets/loading_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class NewVisitaScreen extends StatefulWidget {
+class NewVisitaScreen extends ConsumerStatefulWidget {
   const NewVisitaScreen({super.key, required this.clienteID});
 
   final int clienteID;
 
   @override
-  State<NewVisitaScreen> createState() => _NewVisitaScreenState();
+  ConsumerState<NewVisitaScreen> createState() => _NewVisitaScreenState();
 }
 
-class _NewVisitaScreenState extends State<NewVisitaScreen> with ValidationsMixin {
+class _NewVisitaScreenState extends ConsumerState<NewVisitaScreen> with ValidationsMixin {
   final _formKey = GlobalKey<FormState>();
   final _dataVisitaController = TextEditingController(text: UtilData.obterDataDDMMAAAA(DateTime.now()));
   final _descricaoController = TextEditingController();
@@ -30,18 +31,13 @@ class _NewVisitaScreenState extends State<NewVisitaScreen> with ValidationsMixin
   }
 
   Future<bool> saveNewVisita() async {
-    final visitaRepo = VisitaRepository(VisitaDBDataSource());
     List<String> dateParts = _dataVisitaController.text.split('/');
     String formattedDate = '${dateParts[2]}-${dateParts[1]}-${dateParts[0]}';
     DateTime date = DateTime.parse(formattedDate);
 
-    Map<String, dynamic> json = {
-      'cliente_id': widget.clienteID,
-      'data': date.millisecondsSinceEpoch,
-      'descricao': _descricaoController.text,
-    };
+    final newVisita = Visita(id: 0, clienteID: widget.clienteID, data: date.millisecondsSinceEpoch, descricao: _descricaoController.text);
 
-    await visitaRepo.insertVisitaFromJson(json);
+    await ref.read(visitasNotifierProvider(widget.clienteID).notifier).insertVisita(newVisita);
 
     return true;
   }

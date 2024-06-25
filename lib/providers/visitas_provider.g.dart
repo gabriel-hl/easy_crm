@@ -6,7 +6,7 @@ part of 'visitas_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$visitasNotifierHash() => r'60ca99a3b3dfaacbcb1654b294ebe1a94d2eac76';
+String _$visitasNotifierHash() => r'1f562b9e5553c083ba84f3caf6c787bc79ac8a75';
 
 /// Copied from Dart SDK
 class _SystemHash {

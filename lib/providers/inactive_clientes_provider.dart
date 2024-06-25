@@ -14,4 +14,27 @@ class InactiveClientesNotifier extends _$InactiveClientesNotifier {
   Future<List<Cliente>> build() async {
     return _clienteRepository.getInactiveClientes();
   }
+
+  Future<void> activateCliente(Cliente cliente) async {
+    try {
+      state = const AsyncValue.loading();
+      await _clienteRepository.activateCliente(cliente);
+      final clientes = await _clienteRepository.getInactiveClientes();
+      state = AsyncValue.data(clientes);
+    } catch (error, stacktrace) {
+      state = AsyncValue.error(error, stacktrace);
+    }
+  }
+
+  Future<void> deleteCliente(Cliente cliente) async {
+    try {
+      state = const AsyncValue.loading();
+
+      await _clienteRepository.deleteCliente(cliente);
+      final clientes = await _clienteRepository.getInactiveClientes();
+      state = AsyncValue.data(clientes);
+    } catch (error, stacktrace) {
+      state = AsyncValue.error(error, stacktrace);
+    }
+  }
 }

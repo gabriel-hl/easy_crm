@@ -40,6 +40,7 @@ class _InactiveClientesHomeScreenState extends ConsumerState<InactiveClientesHom
                   MaterialPageRoute(
                     builder: (context) => PopScope(
                       onPopInvoked: (_) => setState(() {
+                        // ignore: unused_result
                         ref.refresh(inactiveClientesNotifierProvider);
                       }),
                       child: InactiveClienteScreen(
@@ -112,7 +113,7 @@ class _InactiveClientesHomeScreenState extends ConsumerState<InactiveClientesHom
 
   @override
   Widget build(BuildContext context) {
-    AsyncValue<List<Cliente>> activeClientes = ref.watch(inactiveClientesNotifierProvider);
+    AsyncValue<List<Cliente>> inactiveClientes = ref.watch(inactiveClientesNotifierProvider);
 
     return Scaffold(
       //backgroundColor: Theme.of(context).colorScheme.seconde,
@@ -126,7 +127,7 @@ class _InactiveClientesHomeScreenState extends ConsumerState<InactiveClientesHom
 
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8),
-        child: activeClientes.when(
+        child: inactiveClientes.when(
           skipLoadingOnRefresh: false,
           data: (activeClientes) {
             return activeClientes.isEmpty
@@ -144,7 +145,7 @@ class _InactiveClientesHomeScreenState extends ConsumerState<InactiveClientesHom
                 children: [
                   TextButton.icon(
                       onPressed: () {
-                        activeClientes = ref.refresh(inactiveClientesNotifierProvider);
+                        inactiveClientes = ref.refresh(inactiveClientesNotifierProvider);
                       },
                       icon: const Icon(Icons.restart_alt),
                       label: const Text('Recarregar')),

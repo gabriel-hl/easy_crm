@@ -6,7 +6,7 @@ part of 'clientes_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$clientesNotifierHash() => r'd14600fee65b7be160681ca508eef6e85da77d29';
+String _$clientesNotifierHash() => r'd1bcda0f2d4159aefed3c68f90e806f4c0ec1de3';
 
 /// See also [ClientesNotifier].
 @ProviderFor(ClientesNotifier)

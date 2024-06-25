@@ -1,20 +1,22 @@
 import 'package:brasil_fields/brasil_fields.dart';
-import 'package:easy_crm/data/datasources/cliente_db_datasource.dart';
-import 'package:easy_crm/data/datasources/contato_db_datasource.dart';
-import 'package:easy_crm/repository/cliente_repository.dart';
+import 'package:easy_crm/models/cliente_model.dart';
+import 'package:easy_crm/models/contato_model.dart';
+import 'package:easy_crm/providers/clientes_provider.dart';
 import 'package:easy_crm/widgets/custom_cliente_data_fields.dart';
+import 'package:easy_crm/widgets/custom_contato_form.dart';
 import 'package:easy_crm/widgets/error_dialog.dart';
 import 'package:easy_crm/widgets/loading_dialog.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class NewClienteScreen extends StatefulWidget {
+class NewClienteScreen extends ConsumerStatefulWidget {
   const NewClienteScreen({super.key});
 
   @override
-  State<NewClienteScreen> createState() => _NewClienteScreenState();
+  ConsumerState<NewClienteScreen> createState() => _NewClienteScreenState();
 }
 
-class _NewClienteScreenState extends State<NewClienteScreen> {
+class _NewClienteScreenState extends ConsumerState<NewClienteScreen> {
   final _formKey = GlobalKey<FormState>();
   final _dataCadastroController = TextEditingController(text: UtilData.obterDataDDMMAAAA(DateTime.now()));
   final _cnpjCpfController = TextEditingController();
@@ -29,6 +31,8 @@ class _NewClienteScreenState extends State<NewClienteScreen> {
   final _bairroController = TextEditingController();
   final _cidadeController = TextEditingController();
   final _estadoController = TextEditingController();
+
+  final _contatoForms = <CustomContatoForm>[];
 
   @override
   void dispose() {
@@ -46,14 +50,18 @@ class _NewClienteScreenState extends State<NewClienteScreen> {
     _cidadeController.dispose();
     _estadoController.dispose();
 
+    // Pra cada CustomContatoForm criado
+    for (var form in _contatoForms) {
+      form.cargoController.dispose();
+      form.nomeController.dispose();
+      form.telefoneController.dispose();
+    }
     super.dispose();
   }
 
   Future<bool> saveNewCliente() async {
-    final clienteRepo = ClienteRepository(clienteDataSource: ClienteDBDataSource(), contatoDataSource: ContatoDBDataSource());
-
-    if (await clienteRepo.clienteAlreadyExists(_cnpjCpfController.text)) {
-      if (!await clienteRepo.isClienteActive(_cnpjCpfController.text)) {
+    if (await ref.read(clientesNotifierProvider.notifier).clienteAlreadyExists(_cnpjCpfController.text)) {
+      if (!await ref.read(clientesNotifierProvider.notifier).isClienteActive(_cnpjCpfController.text)) {
         throw 'Cliente já cadastrado porém inativo. Realize a reativação';
       }
       throw 'Já existe um cliente cadastrado com o CPF/CNPJ informado!';
@@ -62,24 +70,39 @@ class _NewClienteScreenState extends State<NewClienteScreen> {
       String formattedDate = '${dateParts[2]}-${dateParts[1]}-${dateParts[0]}';
       DateTime date = DateTime.parse(formattedDate);
 
-      Map<String, dynamic> json = {
-        'ativo': 1,
-        'nomeRazao': _razaoSocialNomeController.text,
-        'apelidoFantasia': _nomeFantasiaApelidoController.text,
-        'cpfCnpj': _cnpjCpfController.text,
-        'telefone': _telefoneController.text,
-        'email': _emailController.text,
-        'dataCadastro': date.millisecondsSinceEpoch,
-        'cep': _cepController.text,
-        'estado': _estadoController.text,
-        'cidade': _cidadeController.text,
-        'bairro': _bairroController.text,
-        'endereco': _logradouroController.text,
-        'numero': _numeroController.text,
-        'complemento': _complementoController.text,
-      };
+      Cliente newCliente = Cliente(
+        id: 0,
+        ativo: 1,
+        nomeRazao: _razaoSocialNomeController.text,
+        apelidoFantasia: _nomeFantasiaApelidoController.text,
+        cpfCnpj: _cnpjCpfController.text,
+        telefone: _telefoneController.text,
+        email: _emailController.text,
+        dataCadastro: date.millisecondsSinceEpoch,
+        cep: _cepController.text,
+        estado: _estadoController.text,
+        cidade: _cidadeController.text,
+        bairro: _bairroController.text,
+        endereco: _logradouroController.text,
+        numero: _numeroController.text,
+        complemento: _complementoController.text,
+      );
 
-      await clienteRepo.insertClienteFromJson(json);
+      List<Contato> contatos = [];
+
+      for (CustomContatoForm form in _contatoForms) {
+        contatos.add(Contato(
+          id: 0,
+          clienteID: 0,
+          nome: form.nomeController.text,
+          cargo: form.cargoController.text,
+          telefone: form.telefoneController.text,
+        ));
+      }
+
+      newCliente.contatos = contatos;
+
+      ref.read(clientesNotifierProvider.notifier).insertCliente(newCliente);
 
       return true;
     }
@@ -133,22 +156,27 @@ class _NewClienteScreenState extends State<NewClienteScreen> {
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: CustomClienteDataFields(
-            formKey: _formKey,
-            editableDataCadastro: true,
-            dataCadastroController: _dataCadastroController,
-            cnpjCpfController: _cnpjCpfController,
-            razaoSocialNomeController: _razaoSocialNomeController,
-            nomeFantasiaApelidoController: _nomeFantasiaApelidoController,
-            telefoneController: _telefoneController,
-            emailController: _emailController,
-            cepController: _cepController,
-            logradouroController: _logradouroController,
-            numeroController: _numeroController,
-            complementoController: _complementoController,
-            bairroController: _bairroController,
-            cidadeController: _cidadeController,
-            estadoController: _estadoController,
+          child: Column(
+            children: [
+              CustomClienteDataFields(
+                formKey: _formKey,
+                editableDataCadastro: true,
+                dataCadastroController: _dataCadastroController,
+                cnpjCpfController: _cnpjCpfController,
+                razaoSocialNomeController: _razaoSocialNomeController,
+                nomeFantasiaApelidoController: _nomeFantasiaApelidoController,
+                telefoneController: _telefoneController,
+                emailController: _emailController,
+                cepController: _cepController,
+                logradouroController: _logradouroController,
+                numeroController: _numeroController,
+                complementoController: _complementoController,
+                bairroController: _bairroController,
+                cidadeController: _cidadeController,
+                estadoController: _estadoController,
+                contatoForms: _contatoForms,
+              ),
+            ],
           ),
         ),
       ),

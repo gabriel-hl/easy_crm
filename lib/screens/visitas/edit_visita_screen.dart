@@ -1,24 +1,24 @@
 import 'package:brasil_fields/brasil_fields.dart';
-import 'package:easy_crm/data/datasources/visita_db_datasource.dart';
 import 'package:easy_crm/models/visita_model.dart';
-import 'package:easy_crm/repository/visita_repository.dart';
+import 'package:easy_crm/providers/visitas_provider.dart';
 import 'package:easy_crm/util/validations_mixin.dart';
 import 'package:easy_crm/widgets/custom_text_form_field.dart';
 import 'package:easy_crm/widgets/error_dialog.dart';
 import 'package:easy_crm/widgets/loading_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class EditVisitaScreen extends StatefulWidget {
+class EditVisitaScreen extends ConsumerStatefulWidget {
   const EditVisitaScreen({super.key, required this.visita});
 
   final Visita visita;
 
   @override
-  State<EditVisitaScreen> createState() => _EditVisitaScreenState();
+  ConsumerState<EditVisitaScreen> createState() => _EditVisitaScreenState();
 }
 
-class _EditVisitaScreenState extends State<EditVisitaScreen> with ValidationsMixin {
+class _EditVisitaScreenState extends ConsumerState<EditVisitaScreen> with ValidationsMixin {
   final _formKey = GlobalKey<FormState>();
   final _dataVisitaController = TextEditingController();
   final _descricaoController = TextEditingController();
@@ -38,8 +38,6 @@ class _EditVisitaScreenState extends State<EditVisitaScreen> with ValidationsMix
   }
 
   Future<bool> saveVisita() async {
-    final visitaRepo = VisitaRepository(VisitaDBDataSource());
-
     List<String> dateParts = _dataVisitaController.text.split('/');
     String formattedDate = '${dateParts[2]}-${dateParts[1]}-${dateParts[0]}';
     DateTime date = DateTime.parse(formattedDate);
@@ -47,7 +45,7 @@ class _EditVisitaScreenState extends State<EditVisitaScreen> with ValidationsMix
     widget.visita.data = date.millisecondsSinceEpoch;
     widget.visita.descricao = _descricaoController.text;
 
-    await visitaRepo.updateVisita(widget.visita);
+    ref.read(visitasNotifierProvider(widget.visita.clienteID).notifier).updateVisita(widget.visita);
 
     return true;
   }

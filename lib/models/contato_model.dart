@@ -13,7 +13,17 @@ class Contato {
     this.telefone,
   });
 
-  factory Contato.fromJson(Map<String, dynamic> json) {
+  Contato copyWith({int? id, int? clienteID, String? nome, String? cargo, String? telefone}) {
+    return Contato(
+      id: id ?? this.id,
+      clienteID: clienteID ?? this.clienteID,
+      nome: nome ?? this.nome,
+      cargo: cargo ?? this.cargo,
+      telefone: telefone ?? this.telefone,
+    );
+  }
+
+/*   factory Contato.fromJson(Map<String, dynamic> json) {
     return Contato(
       id: json['id'],
       clienteID: json['cliente_id'],
@@ -21,10 +31,9 @@ class Contato {
       cargo: json['cargo'],
       telefone: json['telefone'],
     );
-  }
+  } */
 
   Map<String, dynamic> toJson() => {
-        'id': id,
         'cliente_id': clienteID,
         'nome': nome,
         'cargo': cargo,

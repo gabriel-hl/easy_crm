@@ -18,6 +18,10 @@ class VisitaRepository {
     await datasource.updateVisita(visita);
   }
 
+  Future<void> deleteVisitaByID(int id) async {
+    await datasource.deleteVisitaByID(id);
+  }
+
   Future<void> deleteVisitasByClienteID(int clienteID) async {
     await datasource.deleteVisitasByClienteID(clienteID);
   }

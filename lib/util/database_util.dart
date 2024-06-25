@@ -27,7 +27,7 @@ class DB {
 
     return await openDatabase(
       path,
-      version: 2, //TODO: Alterar pra 2
+      version: 2,
       onCreate: _createDB,
       onUpgrade: _migrateV1toV2,
     );

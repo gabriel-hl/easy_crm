@@ -6,12 +6,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 class CustomContatoForm extends StatelessWidget with ValidationsMixin {
+  final int contatoID;
   final TextEditingController nomeController;
   final TextEditingController cargoController;
   final TextEditingController telefoneController;
 
   const CustomContatoForm({
     super.key,
+    required this.contatoID, // Utiliza-se contatoID = 0 quando for um novo contato
     required this.nomeController,
     required this.cargoController,
     required this.telefoneController,
@@ -20,13 +22,13 @@ class CustomContatoForm extends StatelessWidget with ValidationsMixin {
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        const Text('Novo contato'),
         CustomTextFormField(
           controller: nomeController,
           inputFormatters: [FilteringTextInputFormatter.singleLineFormatter, UpperCaseInputFormatter()],
-          icon: const Icon(null),
+          validator: isNotEmpty,
+          icon: const Icon(Icons.person),
           labelText: 'Nome',
         ),
         const SizedBox(height: 12),
@@ -41,7 +43,7 @@ class CustomContatoForm extends StatelessWidget with ValidationsMixin {
           controller: telefoneController,
           keyboardType: TextInputType.number,
           inputFormatters: [FilteringTextInputFormatter.singleLineFormatter, FilteringTextInputFormatter.digitsOnly, TelefoneInputFormatter()],
-          icon: const Icon(Icons.phone),
+          icon: const Icon(null),
           labelText: 'Telefone',
         ),
       ],

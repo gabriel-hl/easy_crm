@@ -37,23 +37,40 @@ class Cliente {
     this.contatos,
   });
 
-  factory Cliente.fromJSON(Map<String, dynamic> json) {
+  // Método para entregar uma nova instância de um Cliente, com as devidas alterações
+  Cliente copyWith({
+    int? ativo,
+    String? nomeRazao,
+    String? apelidoFantasia,
+    String? cpfCnpj,
+    String? telefone,
+    String? email,
+    String? cep,
+    String? estado,
+    String? cidade,
+    String? bairro,
+    String? endereco,
+    String? numero,
+    String? complemento,
+    List<Contato>? contatos,
+  }) {
     return Cliente(
-      id: json['id'],
-      ativo: json['ativo'],
-      nomeRazao: json['nomeRazao'],
-      apelidoFantasia: json['apelidoFantasia'],
-      cpfCnpj: json['cpfCnpj'],
-      telefone: json['telefone'],
-      email: json['email'],
-      dataCadastro: json['dataCadastro'],
-      cep: json['cep'],
-      estado: json['estado'],
-      cidade: json['cidade'],
-      bairro: json['bairro'],
-      endereco: json['endereco'],
-      numero: json['numero'],
-      complemento: json['complemento'],
+      id: id,
+      ativo: ativo ?? this.ativo,
+      nomeRazao: nomeRazao ?? this.nomeRazao,
+      apelidoFantasia: apelidoFantasia ?? this.apelidoFantasia,
+      cpfCnpj: cpfCnpj ?? this.cpfCnpj,
+      telefone: telefone ?? this.telefone,
+      email: email ?? this.email,
+      dataCadastro: dataCadastro,
+      cep: cep ?? this.cep,
+      estado: estado ?? this.estado,
+      cidade: cidade ?? this.cidade,
+      bairro: bairro ?? this.bairro,
+      endereco: endereco ?? this.endereco,
+      numero: numero ?? this.numero,
+      complemento: complemento ?? this.complemento,
+      contatos: contatos ?? this.contatos,
     );
   }
 

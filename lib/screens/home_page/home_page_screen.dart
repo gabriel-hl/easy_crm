@@ -26,6 +26,7 @@ class _HomePageScreenState extends ConsumerState<HomePageScreen> {
         const SizedBox(height: 8),
         Expanded(
           child: ListView.builder(
+            itemCount: clientes.length,
             itemBuilder: (context, index) {
               String subtitle = '';
 
@@ -40,9 +41,12 @@ class _HomePageScreenState extends ConsumerState<HomePageScreen> {
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (context) => PopScope(
-                      onPopInvoked: (_) => setState(() {
-                        ref.refresh(clientesNotifierProvider);
-                      }),
+                      onPopInvoked: (_) {
+                        setState(() {
+                          // ignore: unused_result
+                          ref.refresh(clientesNotifierProvider);
+                        });
+                      },
                       child: ClienteScreen(cliente: clientes[index]),
                     ),
                   ),
@@ -64,7 +68,6 @@ class _HomePageScreenState extends ConsumerState<HomePageScreen> {
                 subtitle: subtitle.isNotEmpty ? Text(subtitle) : null,
               );
             },
-            itemCount: clientes.length,
           ),
         ),
       ],
@@ -141,16 +144,10 @@ class _HomePageScreenState extends ConsumerState<HomePageScreen> {
       floatingActionButton: activeClientes.isLoading || activeClientes.hasError
           ? null
           : FloatingActionButton(
+              heroTag: null,
               onPressed: () {
                 Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => PopScope(
-                      child: const NewClienteScreen(),
-                      onPopInvoked: (_) {
-                        activeClientes = ref.refresh(clientesNotifierProvider);
-                      },
-                    ),
-                  ),
+                  MaterialPageRoute(builder: (context) => const NewClienteScreen()),
                 );
               },
               child: const Icon(Icons.add),

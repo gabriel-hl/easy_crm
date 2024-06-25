@@ -5,26 +5,52 @@ import 'package:sqflite/sqflite.dart';
 class ClienteDBDataSource {
   final _clienteTableDB = 'cliente';
 
-  Future<void> insertCliente(Cliente cliente) async {
+  // CREATE
+  Future<int> insertCliente(Cliente cliente) async {
     try {
       Database db = await DB.instance.database;
 
-      await db.insert(_clienteTableDB, cliente.toJson());
+      return await db.insert(_clienteTableDB, cliente.toJson());
     } catch (error) {
       throw error.toString();
     }
   }
 
-  Future<void> insertClienteFromJson(Map<String, dynamic> json) async {
+  // READ
+  Future<List<Cliente>> getActiveClientes() async {
     try {
       Database db = await DB.instance.database;
+      List<Map<String, dynamic>> rawClientes = await db.query(_clienteTableDB, where: 'ativo = ?', whereArgs: [1], orderBy: 'nomeRazao ASC');
 
-      await db.insert(_clienteTableDB, json);
+      if (rawClientes.isEmpty) return [];
+
+      List<Cliente> clientes = rawClientes
+          .map((cliente) => Cliente(
+                id: cliente['id'],
+                ativo: cliente['ativo'],
+                nomeRazao: cliente['nomeRazao'],
+                apelidoFantasia: cliente['apelidoFantasia'],
+                cpfCnpj: cliente['cpfCnpj'],
+                telefone: cliente['telefone'],
+                email: cliente['email'],
+                dataCadastro: cliente['dataCadastro'],
+                cep: cliente['cep'],
+                estado: cliente['estado'],
+                cidade: cliente['cidade'],
+                bairro: cliente['bairro'],
+                endereco: cliente['endereco'],
+                numero: cliente['numero'],
+                complemento: cliente['complemento'],
+              ))
+          .toList();
+
+      return clientes;
     } catch (error) {
       throw error.toString();
     }
   }
 
+  // UPDATE
   Future<void> updateCliente(Cliente cliente) async {
     try {
       Database db = await DB.instance.database;
@@ -35,6 +61,7 @@ class ClienteDBDataSource {
     }
   }
 
+  // DELETE
   Future<void> deleteCliente(Cliente cliente) async {
     try {
       Database db = await DB.instance.database;
@@ -44,6 +71,8 @@ class ClienteDBDataSource {
       throw error.toString();
     }
   }
+
+  // ============== OTHERS ==============
 
   Future<void> inactivateCliente(Cliente cliente) async {
     try {
@@ -65,19 +94,34 @@ class ClienteDBDataSource {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getActiveClientes() async {
+  Future<List<Cliente>> getInactiveClientes() async {
     try {
       Database db = await DB.instance.database;
-      return await db.query(_clienteTableDB, where: 'ativo = ?', whereArgs: [1], orderBy: 'nomeRazao ASC');
-    } catch (error) {
-      throw error.toString();
-    }
-  }
+      List<Map<String, dynamic>> rawClientes = await db.query(_clienteTableDB, where: 'ativo = ?', whereArgs: [0], orderBy: 'nomeRazao ASC');
 
-  Future<List<Map<String, dynamic>>> getInactiveClientes() async {
-    try {
-      Database db = await DB.instance.database;
-      return await db.query(_clienteTableDB, where: 'ativo = ?', whereArgs: [0], orderBy: 'nomeRazao ASC');
+      if (rawClientes.isEmpty) return [];
+
+      List<Cliente> clientes = rawClientes
+          .map((cliente) => Cliente(
+                id: cliente['id'],
+                ativo: cliente['ativo'],
+                nomeRazao: cliente['nomeRazao'],
+                apelidoFantasia: cliente['apelidoFantasia'],
+                cpfCnpj: cliente['cpfCnpj'],
+                telefone: cliente['telefone'],
+                email: cliente['email'],
+                dataCadastro: cliente['dataCadastro'],
+                cep: cliente['cep'],
+                estado: cliente['estado'],
+                cidade: cliente['cidade'],
+                bairro: cliente['bairro'],
+                endereco: cliente['endereco'],
+                numero: cliente['numero'],
+                complemento: cliente['complemento'],
+              ))
+          .toList();
+
+      return clientes;
     } catch (error) {
       throw error.toString();
     }
@@ -108,4 +152,14 @@ class ClienteDBDataSource {
 
     return result.isNotEmpty;
   }
+
+/*   Future<int> insertClienteFromJson(Map<String, dynamic> json) async {
+    try {
+      Database db = await DB.instance.database;
+
+      return await db.insert(_clienteTableDB, json);
+    } catch (error) {
+      throw error.toString();
+    }
+  } */
 }

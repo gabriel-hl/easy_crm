@@ -1,23 +1,24 @@
 import 'package:brasil_fields/brasil_fields.dart';
-import 'package:easy_crm/data/datasources/cliente_db_datasource.dart';
-import 'package:easy_crm/data/datasources/contato_db_datasource.dart';
 import 'package:easy_crm/models/cliente_model.dart';
-import 'package:easy_crm/repository/cliente_repository.dart';
+import 'package:easy_crm/models/contato_model.dart';
+import 'package:easy_crm/providers/clientes_provider.dart';
 import 'package:easy_crm/widgets/custom_cliente_data_fields.dart';
+import 'package:easy_crm/widgets/custom_contato_form.dart';
 import 'package:easy_crm/widgets/error_dialog.dart';
 import 'package:easy_crm/widgets/loading_dialog.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class EditClientScreen extends StatefulWidget {
+class EditClientScreen extends ConsumerStatefulWidget {
   const EditClientScreen({super.key, required this.cliente});
 
   final Cliente cliente;
 
   @override
-  State<EditClientScreen> createState() => _EditClientScreenState();
+  ConsumerState<EditClientScreen> createState() => _EditClientScreenState();
 }
 
-class _EditClientScreenState extends State<EditClientScreen> {
+class _EditClientScreenState extends ConsumerState<EditClientScreen> {
   final _formKey = GlobalKey<FormState>();
   final _dataCadastroController = TextEditingController();
   final _cnpjCpfController = TextEditingController();
@@ -32,6 +33,7 @@ class _EditClientScreenState extends State<EditClientScreen> {
   final _bairroController = TextEditingController();
   final _cidadeController = TextEditingController();
   final _estadoController = TextEditingController();
+  final _contatoForms = <CustomContatoForm>[];
 
   @override
   void initState() {
@@ -49,6 +51,17 @@ class _EditClientScreenState extends State<EditClientScreen> {
     _bairroController.text = widget.cliente.bairro ?? '';
     _cidadeController.text = widget.cliente.cidade ?? '';
     _estadoController.text = widget.cliente.estado ?? '';
+
+    if (widget.cliente.contatos?.isNotEmpty ?? false) {
+      for (var contato in widget.cliente.contatos!) {
+        _contatoForms.add(CustomContatoForm(
+          contatoID: contato.id,
+          nomeController: TextEditingController(text: contato.nome),
+          cargoController: TextEditingController(text: contato.cargo),
+          telefoneController: TextEditingController(text: contato.telefone),
+        ));
+      }
+    }
   }
 
   @override
@@ -66,12 +79,16 @@ class _EditClientScreenState extends State<EditClientScreen> {
     _bairroController.dispose();
     _cidadeController.dispose();
     _estadoController.dispose();
+    // Pra cada CustomContatoForm criado
+    for (var form in _contatoForms) {
+      form.cargoController.dispose();
+      form.nomeController.dispose();
+      form.telefoneController.dispose();
+    }
     super.dispose();
   }
 
   Future<bool> saveCliente() async {
-    var clienteRepo = ClienteRepository(clienteDataSource: ClienteDBDataSource(), contatoDataSource: ContatoDBDataSource());
-
     widget.cliente.nomeRazao = _razaoSocialNomeController.text;
     widget.cliente.apelidoFantasia = _nomeFantasiaApelidoController.text;
     widget.cliente.cpfCnpj = _cnpjCpfController.text;
@@ -85,7 +102,52 @@ class _EditClientScreenState extends State<EditClientScreen> {
     widget.cliente.numero = _numeroController.text;
     widget.cliente.complemento = _complementoController.text;
 
-    await clienteRepo.updateCliente(widget.cliente);
+    List<int> idsToRemove = [];
+
+    // Deletar contatos que foram removidos
+    // verifica se a lista "original" de contatos não é vazia ou nula
+    if (widget.cliente.contatos?.isNotEmpty ?? false) {
+      // pra cada contato "original" na lista...
+      for (var contatoOriginal in widget.cliente.contatos!) {
+        // pra cada formulário em _contatoForms...
+        // isso aqui é 'basicamente' um for loop dentro de um for loop
+        if (!_contatoForms.any((form) => form.contatoID == contatoOriginal.id)) {
+          // se nos formulários não tiver nenhum contato com o ID da interação contatoOriginal.id,
+          // significa que o usuário excluiu o formulário do contato com intenção de excluí-lo
+          idsToRemove.add(contatoOriginal.id);
+        }
+      }
+
+      for (var id in idsToRemove) {
+        await ref.read(clientesNotifierProvider.notifier).deleteContatoByID(id);
+        widget.cliente.contatos!.removeWhere((contato) => contato.id == id);
+      }
+    }
+
+    // Atualizar ou inserir contato
+    for (var form in _contatoForms) {
+      Contato contato = Contato(
+        id: form.contatoID,
+        clienteID: widget.cliente.id,
+        nome: form.nomeController.text,
+        cargo: form.cargoController.text,
+        telefone: form.telefoneController.text,
+      );
+
+      if (contato.id == 0) {
+        // Insere novo contato
+        int newContatoID = await ref.read(clientesNotifierProvider.notifier).insertContato(contato);
+
+        widget.cliente.contatos ??= [];
+        widget.cliente.contatos!.add(contato.copyWith(id: newContatoID));
+      } else {
+        // Atualiza o contato existente
+        await ref.read(clientesNotifierProvider.notifier).updateContato(contato);
+        widget.cliente.contatos![widget.cliente.contatos!.indexWhere((oldContato) => oldContato.id == contato.id)] = contato;
+      }
+    }
+
+    await ref.read(clientesNotifierProvider.notifier).updateCliente(widget.cliente);
 
     return true;
   }
@@ -154,6 +216,7 @@ class _EditClientScreenState extends State<EditClientScreen> {
             bairroController: _bairroController,
             cidadeController: _cidadeController,
             estadoController: _estadoController,
+            contatoForms: _contatoForms,
           ),
         ),
       ),

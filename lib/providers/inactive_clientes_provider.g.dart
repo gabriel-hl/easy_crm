@@ -7,7 +7,7 @@ part of 'inactive_clientes_provider.dart';
 // **************************************************************************
 
 String _$inactiveClientesNotifierHash() =>
-    r'f1245a8402b762c91c81799034422a5d6abffae4';
+    r'05f5712e3eb0eddf1734d298ba27ffe16bc94787';
 
 /// See also [InactiveClientesNotifier].
 @ProviderFor(InactiveClientesNotifier)

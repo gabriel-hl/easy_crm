@@ -33,6 +33,16 @@ class VisitaDBDataSource {
     }
   }
 
+  Future<int> deleteVisitaByID(int id) async {
+    try {
+      Database db = await DB.instance.database;
+
+      return await db.delete(_visitaTableDB, where: 'id = ?', whereArgs: [id]);
+    } catch (error) {
+      throw error.toString();
+    }
+  }
+
   Future<void> deleteVisitasByClienteID(int clienteID) async {
     try {
       Database db = await DB.instance.database;

@@ -1,51 +1,83 @@
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:brasil_fields/brasil_fields.dart';
-import 'package:easy_crm/data/datasources/cliente_db_datasource.dart';
-import 'package:easy_crm/data/datasources/contato_db_datasource.dart';
 import 'package:easy_crm/models/cliente_model.dart';
 import 'package:easy_crm/models/contato_model.dart';
-import 'package:easy_crm/repository/cliente_repository.dart';
+import 'package:easy_crm/providers/clientes_provider.dart';
 import 'package:easy_crm/screens/cliente/edit_cliente_screen.dart';
 import 'package:easy_crm/screens/visitas/visitas_screen.dart';
 import 'package:easy_crm/util/custom_icons.dart';
 import 'package:easy_crm/util/launcher.dart';
 import 'package:easy_crm/widgets/confirmation_dialog.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:share_plus/share_plus.dart';
 
-class ClienteScreen extends StatefulWidget {
+class ClienteScreen extends ConsumerStatefulWidget {
   const ClienteScreen({super.key, required this.cliente});
   final Cliente cliente;
 
   @override
-  State<ClienteScreen> createState() => _ClienteScreenState();
+  ConsumerState<ClienteScreen> createState() => _ClienteScreenState();
 }
 
-class _ClienteScreenState extends State<ClienteScreen> {
+class _ClienteScreenState extends ConsumerState<ClienteScreen> {
+  String shareDataCliente() {
+    String result = '';
+    String endereco = '';
+
+    if (widget.cliente.endereco?.isNotEmpty ?? false) endereco += widget.cliente.endereco!;
+    if (widget.cliente.numero?.isNotEmpty ?? false) endereco += ', ${widget.cliente.numero!}';
+    if (widget.cliente.complemento?.isNotEmpty ?? false) endereco += ', ${widget.cliente.complemento!}';
+    if (widget.cliente.cidade?.isNotEmpty ?? false) endereco += '\n${widget.cliente.cidade!}';
+    if (widget.cliente.estado?.isNotEmpty ?? false) endereco += '/${widget.cliente.estado!}';
+    if (widget.cliente.cep?.isNotEmpty ?? false) endereco += '\nCEP: ${widget.cliente.cep!}';
+
+    result += '${widget.cliente.nomeRazao} - ${widget.cliente.apelidoFantasia}';
+    result += '\nCNPJ/CPF: ${widget.cliente.cpfCnpj}';
+    result += '\n\nTelefone: ${widget.cliente.telefone}';
+    result += '\nEmail: ${widget.cliente.email}';
+    result += '\n\nEndereço: $endereco';
+
+    return result;
+  }
+
   Widget contatoTile(Contato contato) {
-    return ListTile(
-      contentPadding: const EdgeInsets.all(0),
-      title: AutoSizeText('${contato.nome}\n${contato.cargo}'),
-      subtitle: Visibility(
-        visible: contato.telefone?.isNotEmpty ?? false,
-        child: AutoSizeText(contato.telefone!),
-      ),
-      trailing: PopupMenuButton(
-        itemBuilder: (context) => [
-          PopupMenuItem(
-            onTap: () => Launcher.launchPhone(context, phone: contato.telefone),
-            child: const Text('Ligar'),
-          ),
-          PopupMenuItem(
-            onTap: () => Launcher.launchWhatsApp(context, phone: contato.telefone),
-            child: const Text('Whatsapp'),
-          ),
-          const PopupMenuItem(
-            // TODO: compartilhar
-            //onTap: () => Launcher.launchWhatsApp(context, phone: widget.cliente.contatoTelefone),
-            child: Text('Compartilhar'),
-          ),
+    RichText title = RichText(
+      text: TextSpan(
+        style: Theme.of(context).textTheme.titleMedium,
+        text: contato.nome,
+        children: [
+          if (contato.cargo?.isNotEmpty ?? false)
+            TextSpan(
+              text: '\n${contato.cargo}',
+              style: Theme.of(context).textTheme.labelMedium,
+            ),
         ],
+      ),
+    );
+
+    return Material(
+      color: Theme.of(context).colorScheme.secondaryContainer,
+      elevation: 2,
+      borderRadius: const BorderRadius.all(Radius.circular(15)),
+      child: ListTile(
+        contentPadding: const EdgeInsets.only(left: 10, top: 2, bottom: 2),
+        title: title,
+        subtitle: Visibility(
+          visible: contato.telefone?.isNotEmpty ?? false,
+          child: AutoSizeText(contato.telefone!),
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(visualDensity: VisualDensity.compact, onPressed: () => Launcher.launchPhone(context, phone: contato.telefone), icon: const Icon(Icons.phone_enabled)),
+            IconButton(visualDensity: VisualDensity.compact, onPressed: () => Launcher.launchWhatsApp(context, phone: contato.telefone), icon: const Icon(CustomIcons.whatsapp)),
+            IconButton(
+                visualDensity: VisualDensity.compact,
+                onPressed: () => Share.share('Contato: ${contato.nome}\nCargo: ${contato.cargo}\nTelefone: ${contato.telefone}', subject: 'Dados do contato ${contato.nome}'),
+                icon: const Icon(Icons.share_outlined)),
+          ],
+        ),
       ),
     );
   }
@@ -134,51 +166,58 @@ class _ClienteScreenState extends State<ClienteScreen> {
     return Column(
       mainAxisSize: MainAxisSize.max,
       children: [
-        Material(
-          elevation: 2,
-          borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(15), bottomRight: Radius.circular(15)),
-          child: ListTile(
-            leading: const Icon(Icons.apartment_outlined),
-            title: const Text(
-              'CNPJ/CPF',
-              style: TextStyle(fontWeight: FontWeight.w500),
+        Padding(
+          padding: const EdgeInsets.only(top: 4.0),
+          child: Material(
+            elevation: 2,
+            borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(15), bottomRight: Radius.circular(15)),
+            child: ListTile(
+              leading: const Icon(Icons.apartment_outlined),
+              title: const Text(
+                'CNPJ/CPF',
+                style: TextStyle(fontWeight: FontWeight.w500),
+              ),
+              subtitle: Text(widget.cliente.cpfCnpj),
             ),
-            subtitle: Text(widget.cliente.cpfCnpj),
           ),
         ),
-        const SizedBox(height: 8),
         Visibility(
           visible: widget.cliente.telefone?.isNotEmpty ?? false,
-          child: Material(
-            elevation: 2,
-            borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(15), bottomRight: Radius.circular(15)),
-            child: ListTile(
-              leading: InkWell(
-                child: const Icon(Icons.phone_outlined),
-                onTap: () => Launcher.launchPhone(context, phone: widget.cliente.telefone),
+          child: Padding(
+            padding: const EdgeInsets.only(top: 4.0),
+            child: Material(
+              elevation: 2,
+              borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(15), bottomRight: Radius.circular(15)),
+              child: ListTile(
+                leading: InkWell(
+                  child: const Icon(Icons.phone_outlined),
+                  onTap: () => Launcher.launchPhone(context, phone: widget.cliente.telefone),
+                ),
+                trailing: InkWell(
+                  child: const Icon(CustomIcons.whatsapp),
+                  onTap: () => Launcher.launchWhatsApp(context, phone: widget.cliente.telefone),
+                ),
+                title: const Text('Telefone', style: TextStyle(fontWeight: FontWeight.w500)),
+                subtitle: Text(widget.cliente.telefone ?? ''),
               ),
-              trailing: InkWell(
-                child: const Icon(CustomIcons.whatsapp),
-                onTap: () => Launcher.launchWhatsApp(context, phone: widget.cliente.telefone),
-              ),
-              title: const Text('Telefone', style: TextStyle(fontWeight: FontWeight.w500)),
-              subtitle: Text(widget.cliente.telefone ?? ''),
             ),
           ),
         ),
-        const SizedBox(height: 8),
         Visibility(
           visible: widget.cliente.email?.isNotEmpty ?? false,
-          child: Material(
-            elevation: 2,
-            borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(15), bottomRight: Radius.circular(15)),
-            child: ListTile(
-              leading: InkWell(
-                onTap: () => Launcher.launchEmail(context, email: widget.cliente.email),
-                child: const Icon(Icons.mail_outlined),
+          child: Padding(
+            padding: const EdgeInsets.only(top: 4.0),
+            child: Material(
+              elevation: 2,
+              borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(15), bottomRight: Radius.circular(15)),
+              child: ListTile(
+                leading: InkWell(
+                  onTap: () => Launcher.launchEmail(context, email: widget.cliente.email),
+                  child: const Icon(Icons.mail_outlined),
+                ),
+                title: const Text('Email', style: TextStyle(fontWeight: FontWeight.w500)),
+                subtitle: Text(widget.cliente.email ?? ''),
               ),
-              title: const Text('Email', style: TextStyle(fontWeight: FontWeight.w500)),
-              subtitle: Text(widget.cliente.email ?? ''),
             ),
           ),
         ),
@@ -191,22 +230,29 @@ class _ClienteScreenState extends State<ClienteScreen> {
       width: double.infinity,
       child: Visibility(
         visible: widget.cliente.contatos?.isNotEmpty ?? false,
-        //visible: widget.cliente.contatoPessoa?.isNotEmpty ?? false,
         child: Stack(
           alignment: Alignment.topRight,
           children: [
             Card(
-              margin: const EdgeInsets.all(8),
+              margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
               elevation: 0,
-              color: Theme.of(context).colorScheme.secondaryContainer,
+              color: Colors.transparent,
               child: Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 2),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.max,
                   children: [
-                    const Text('Dados do contato', style: TextStyle(fontWeight: FontWeight.bold)),
-                    for (Contato contato in widget.cliente.contatos!) contatoTile(contato),
+                    const Padding(
+                      padding: EdgeInsets.only(left: 12),
+                      child: Text('Contatos', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                    if (widget.cliente.contatos != null && widget.cliente.contatos!.isNotEmpty)
+                      for (Contato contato in widget.cliente.contatos!.reversed)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: contatoTile(contato),
+                        ),
                   ],
                 ),
               ),
@@ -229,22 +275,25 @@ class _ClienteScreenState extends State<ClienteScreen> {
 
     return Visibility(
       visible: widget.cliente.endereco?.isNotEmpty ?? false,
-      child: Material(
-        elevation: 2,
-        borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(15), bottomRight: Radius.circular(15)),
-        child: ListTile(
-          leading: InkWell(
-            onTap: () => Launcher.launchMap(
-              context,
-              endereco: widget.cliente.endereco,
-              numero: widget.cliente.numero,
-              cidade: widget.cliente.cidade,
-              estado: widget.cliente.estado,
+      child: Padding(
+        padding: const EdgeInsets.only(top: 4.0),
+        child: Material(
+          elevation: 2,
+          borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(15), bottomRight: Radius.circular(15)),
+          child: ListTile(
+            leading: InkWell(
+              onTap: () => Launcher.launchMap(
+                context,
+                endereco: widget.cliente.endereco,
+                numero: widget.cliente.numero,
+                cidade: widget.cliente.cidade,
+                estado: widget.cliente.estado,
+              ),
+              child: const Icon(Icons.location_on_outlined),
             ),
-            child: const Icon(Icons.location_on_outlined),
+            title: const Text('Endereço', style: TextStyle(fontWeight: FontWeight.w500)),
+            subtitle: Text(endereco),
           ),
-          title: const Text('Endereço', style: TextStyle(fontWeight: FontWeight.w500)),
-          subtitle: Text(endereco),
         ),
       ),
     );
@@ -265,7 +314,9 @@ class _ClienteScreenState extends State<ClienteScreen> {
                 onPressed: () {
                   Navigator.of(context).push(MaterialPageRoute(
                       builder: (context) => PopScope(
-                            onPopInvoked: (_) => setState(() {}),
+                            onPopInvoked: (_) {
+                              setState(() {});
+                            },
                             child: EditClientScreen(
                               cliente: widget.cliente,
                             ),
@@ -274,24 +325,20 @@ class _ClienteScreenState extends State<ClienteScreen> {
                 icon: const Icon(Icons.edit_outlined)),
             PopupMenuButton(
               itemBuilder: (context) => [
-                /* PopupMenuItem(
-                  onTap: () {
-                    // TODO: implementar copiar dados
-                  },
-                  child: const Text('Copiar dados'),
-                ), */
+                PopupMenuItem(
+                  onTap: () => Share.share(shareDataCliente(), subject: 'Dados do cliente ${widget.cliente.nomeRazao}'),
+                  child: const Text('Compartilhar'),
+                ),
                 PopupMenuItem(
                   onTap: () {
-                    // TODO: implementar inativar
                     showDialog(
                       barrierDismissible: false,
                       context: context,
                       builder: (context) => const ConfirmationDialog(title: 'Inativar cliente', dialog: 'Deseja inativar o cliente?'),
                     ).then((inactivateCliente) async {
                       if (inactivateCliente) {
-                        var clienteRepo = ClienteRepository(clienteDataSource: ClienteDBDataSource(), contatoDataSource: ContatoDBDataSource());
+                        await ref.read(clientesNotifierProvider.notifier).inactivateCliente(widget.cliente);
 
-                        await clienteRepo.inactivateCliente(widget.cliente);
                         if (context.mounted) Navigator.of(context).pop();
                       }
                     });
@@ -312,11 +359,8 @@ class _ClienteScreenState extends State<ClienteScreen> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               headerCliente(),
-              const SizedBox(height: 5),
               dataCliente(focusNode),
-              const SizedBox(height: 5),
               enderecoCliente(focusNode),
-              const SizedBox(height: 5),
               contatoCliente(),
             ],
           ),
